@@ -11,7 +11,14 @@ const FIXED = {
   numXOffset: 22,
   numYOffset: 22,
   numSize: 42,
-  numGap: 20
+  numGap: 20,
+  numberTextGap: 30,
+  topInsetRatio: 0.14,
+  bottomInsetRatio: 0.10,
+  minBlockRatioSide: 0.32,
+  maxBlockRatioSide: 0.50,
+  minBlockRatioCenter: 0.40,
+  maxBlockRatioCenter: 0.64
 };
 
 function currentFormat(){ return document.getElementById('format').value; }
@@ -34,8 +41,8 @@ function blankZoneData(n){
   return Array.from({length:n}, (_,i)=>({
     img:null,
     text:'',
-    pos: currentFormat()==='single' ? 'bottom-left' : (i===0 ? 'top-left' : 'bottom-left'),
-    size: currentFormat()==='single' ? 52 : (i===0 ? 34 : 42),
+    pos: currentFormat()==='single' ? 'bottom-left' : 'top-left',
+    size: currentFormat()==='single' ? 52 : 34,
     weight:600,
     color:'#ffffff'
   }));
@@ -61,6 +68,15 @@ function rebuildZones(){
          </div>`
       : '';
 
+    const positions = [
+      'top-left','top-center','top-right',
+      'middle-left','middle-center','middle-right',
+      'bottom-left','bottom-center','bottom-right'
+    ];
+    const positionOptions = positions.map(pos =>
+      `<option value="${pos}" ${zones[i].pos===pos ? 'selected' : ''}>${pos}</option>`
+    ).join('');
+
     card.innerHTML = `
       <div class="frame-title">${title}</div>
       ${uploadField}
@@ -70,17 +86,7 @@ function rebuildZones(){
       <div class="row">
         <div>
           <label>Posición</label>
-          <select data-pos="${i}">
-            <option value="top-left">top-left</option>
-            <option value="top-center">top-center</option>
-            <option value="top-right">top-right</option>
-            <option value="middle-left">middle-left</option>
-            <option value="middle-center">middle-center</option>
-            <option value="middle-right">middle-right</option>
-            <option value="bottom-left" selected>bottom-left</option>
-            <option value="bottom-center">bottom-center</option>
-            <option value="bottom-right">bottom-right</option>
-          </select>
+          <select data-pos="${i}">${positionOptions}</select>
         </div>
         <div>
           <label>Tamaño</label>
@@ -152,8 +158,12 @@ function coverImage(img, x, y, w, h){
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-function wrapText(text, maxWidth, fontSize, fontWeight){
-  ctx.font = `${fontWeight} ${fontSize}px 'Clash Grotesk', Inter, Arial, Helvetica, sans-serif`;
+function fontSpec(fontSize, fontWeight){
+  return `${fontWeight} ${fontSize}px 'Clash Grotesk', Inter, Arial, Helvetica, sans-serif`;
+}
+
+function wrapTextToWidth(text, maxWidth, fontSize, fontWeight){
+  ctx.font = fontSpec(fontSize, fontWeight);
   const words = (text || '').trim().split(/\s+/);
   if(!words[0]) return [];
   const lines = [];
@@ -163,31 +173,100 @@ function wrapText(text, maxWidth, fontSize, fontWeight){
     if(ctx.measureText(test).width > maxWidth && line){
       lines.push(line);
       line = word;
-    } else line = test;
+    } else {
+      line = test;
+    }
   });
   if(line) lines.push(line);
   return lines;
 }
 
+function lineWidths(lines, fontSize, fontWeight){
+  ctx.font = fontSpec(fontSize, fontWeight);
+  return lines.map(line => ctx.measureText(line).width);
+}
+
+function scoreComposedLines(lines, widths, maxWidth){
+  if(!lines.length) return Number.POSITIVE_INFINITY;
+
+  const wordCount = lines.join(' ').split(/\s+/).filter(Boolean).length;
+  const ratios = widths.map(w => w / maxWidth);
+  const avg = ratios.reduce((a,b)=>a+b,0) / ratios.length;
+  const variance = ratios.reduce((sum,r)=>sum + Math.pow(r-avg,2),0) / ratios.length;
+  const lastRatio = ratios[ratios.length-1];
+  let score = 0;
+
+  if(lines.length === 1 && wordCount > 4) score += 140;
+  if(lines.length === 2 || lines.length === 3) score -= 18;
+  if(lines.length === 4) score += 20;
+  if(lines.length > 4) score += (lines.length - 4) * 90;
+
+  score += Math.abs(avg - 0.74) * 120;
+  score += variance * 140;
+
+  if(lines.length > 1 && lastRatio < 0.34) score += 80;
+  ratios.forEach(r=>{
+    if(r > 0.96) score += 45;
+    if(r < 0.28) score += 35;
+  });
+
+  return score;
+}
+
+function textWidthBounds(pos, frameW){
+  if(pos.includes('center')){
+    return [frameW * FIXED.minBlockRatioCenter, frameW * FIXED.maxBlockRatioCenter];
+  }
+  return [frameW * FIXED.minBlockRatioSide, frameW * FIXED.maxBlockRatioSide];
+}
+
+function composeTextLines(text, frameW, fontSize, fontWeight, pos){
+  const [minW, maxW] = textWidthBounds(pos, frameW);
+  let best = null;
+
+  for(let testW=minW; testW<=maxW; testW+=8){
+    const lines = wrapTextToWidth(text, testW, fontSize, fontWeight);
+    const widths = lineWidths(lines, fontSize, fontWeight);
+    const score = scoreComposedLines(lines, widths, testW);
+    if(!best || score < best.score){
+      best = {lines, widths, width:testW, score};
+    }
+  }
+
+  return best || {lines:[], widths:[], width:maxW, score:0};
+}
+
 function anchor(pos, x, y, w, h, pad, blockH){
-  let ax = x + pad, ay = y + pad, align = 'left';
-  if(pos.includes('right')){ ax = x + w - pad; align = 'right'; }
-  else if(pos.includes('center')){ ax = x + w/2; align = 'center'; }
+  let ax = x + pad;
+  let ay = y + pad;
+  let align = 'left';
 
-  const numberSafeBottom = y + FIXED.numYOffset + FIXED.numSize + FIXED.numGap;
-  if(pos === 'top-left') ay = Math.max(ay, numberSafeBottom);
+  if(pos.includes('right')){
+    ax = x + w - pad;
+    align = 'right';
+  }else if(pos.includes('center')){
+    ax = x + w/2;
+    align = 'center';
+  }
 
+  const numberSafeBottom = y + FIXED.numYOffset + FIXED.numSize + FIXED.numGap + FIXED.numberTextGap;
+  const topInset = y + Math.round(h * FIXED.topInsetRatio);
+  const bottomInset = y + h - Math.round(h * FIXED.bottomInsetRatio) - blockH;
+
+  if(pos.startsWith('top')) ay = Math.max(y + pad, topInset);
+  if(pos === 'top-left' && shouldNumber()) ay = Math.max(ay, numberSafeBottom);
   if(pos.startsWith('middle')) ay = y + (h - blockH) / 2;
-  if(pos.startsWith('bottom')) ay = y + h - pad - blockH;
+  if(pos.startsWith('bottom')) ay = Math.max(y + pad, bottomInset);
+
   return {x:ax, y:ay, align};
 }
 
 function drawTextBlock(text, pos, fontSize, fontWeight, color, x, y, w, h){
-  const maxW = w - FIXED.pad * 2;
-  const lines = wrapText(text, maxW, fontSize, fontWeight);
+  const composed = composeTextLines(text, w, fontSize, fontWeight, pos);
+  const lines = composed.lines;
   if(!lines.length) return;
 
-  const lh = Math.round(fontSize * 1.13);
+  const lh = Math.round(fontSize * 1.10);
   const blockH = lines.length * lh;
   const a = anchor(pos, x, y, w, h, FIXED.pad, blockH);
 
@@ -198,7 +277,7 @@ function drawTextBlock(text, pos, fontSize, fontWeight, color, x, y, w, h){
   ctx.shadowColor = color === '#ffffff' ? 'rgba(0,0,0,.48)' : 'rgba(255,255,255,.42)';
   ctx.shadowBlur = 12;
   ctx.shadowOffsetY = 2;
-  ctx.font = `${fontWeight} ${fontSize}px 'Clash Grotesk', Inter, Arial, Helvetica, sans-serif`;
+  ctx.font = fontSpec(fontSize, fontWeight);
   ctx.fillStyle = color;
   ctx.textAlign = a.align;
   ctx.textBaseline = 'top';
@@ -219,9 +298,8 @@ function drawNumber(n, x, y){
   ctx.restore();
 }
 
-function drawFrameSeparators(count, gutter){
+function drawFrameSeparators(count, gutter, frameW){
   if(count <= 1 || gutter <= 0) return;
-  const frameW = (canvas.width - gutter * (count - 1)) / count;
   ctx.save();
   ctx.fillStyle = '#ffffff';
   for(let i=1;i<count;i++){
@@ -246,6 +324,19 @@ function shouldNumber(){
   return document.getElementById('numbering').value === 'on';
 }
 
+function storyboardGeometry(){
+  const count = currentCount();
+  if(currentMode()==='full'){
+    return {count, gutter:0, frameW:canvas.width / count};
+  }
+  const gutter = +document.getElementById('gutter').value;
+  return {
+    count,
+    gutter,
+    frameW:(canvas.width - gutter * (count - 1)) / count
+  };
+}
+
 function render(){
   setCanvasSize();
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -267,21 +358,21 @@ function render(){
     return;
   }
 
-  const count = currentCount();
-  const gutter = +document.getElementById('gutter').value;
-  const frameW = (canvas.width - gutter * (count - 1)) / count;
+  const {count, gutter, frameW} = storyboardGeometry();
 
   if(currentMode()==='full' && fullStoryboardImage){
     coverImage(fullStoryboardImage, 0, 0, canvas.width, canvas.height);
-    drawFrameSeparators(count, gutter);
+    // Full storyboard input is treated as frozen pixels. Composer does not add
+    // another separator layer, preventing duplicate white rules.
   }
 
   for(let i=0;i<count;i++){
-    const x = i * (frameW + gutter);
+    const x = currentMode()==='full' ? i * frameW : i * (frameW + gutter);
+
     if(currentMode()==='separate'){
       if(zones[i].img) coverImage(zones[i].img, x, 0, frameW, canvas.height);
       else drawEmptyFrameLabel(i+1, x, frameW);
-    } else if(!fullStoryboardImage){
+    }else if(!fullStoryboardImage){
       drawEmptyFrameLabel(i+1, x, frameW);
     }
 
@@ -295,6 +386,10 @@ function render(){
     );
 
     if(shouldNumber()) drawNumber(i+1, x, 0);
+  }
+
+  if(currentMode()==='separate'){
+    drawFrameSeparators(count, gutter, frameW);
   }
 }
 
@@ -333,4 +428,5 @@ document.getElementById('exportBtn').addEventListener('click', ()=>{
   a.click();
 });
 
+document.fonts?.ready?.then(render);
 refreshModeUI();
