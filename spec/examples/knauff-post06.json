@@ -7,7 +7,7 @@
   "frame_count": 1,
   "numbering": false,
   "gutter": 0,
-  "source_image_url": null,
+  "source_image_url": "https://raw.githubusercontent.com/miguelcastroe/content-composer/main/production-assets/knauff/06.jpg",
   "protected_areas": [
     {"kind":"face","frame":1,"x":0.08,"y":0.20,"width":0.34,"height":0.48},
     {"kind":"action","frame":1,"x":0.55,"y":0.25,"width":0.36,"height":0.36},
