@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "piece_id": "ardicorp-knauff-06-aug-2026",
+  "brand": "Knauff",
+  "format": "single-4x5",
+  "input_mode": "single",
+  "frame_count": 1,
+  "numbering": false,
+  "gutter": 0,
+  "source_image_url": null,
+  "protected_areas": [
+    {"kind":"face","frame":1,"x":0.08,"y":0.20,"width":0.34,"height":0.48},
+    {"kind":"action","frame":1,"x":0.55,"y":0.25,"width":0.36,"height":0.36},
+    {"kind":"product","frame":1,"x":0.72,"y":0.55,"width":0.20,"height":0.33}
+  ],
+  "zones": [
+    {
+      "frame": 1,
+      "text": "No es arte. Es óxido.",
+      "position": "top-center",
+      "size": 68,
+      "weight": 600,
+      "color": "#ffffff"
+    }
+  ],
+  "qa": {
+    "protect_faces": true,
+    "protect_products": true,
+    "protect_actions": true,
+    "hero_layout": true
+  }
+}
