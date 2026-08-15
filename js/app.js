@@ -8,7 +8,6 @@ let zones = [];
 
 const FIXED = {
   pad: 28,
-  defaultTextColor: '#ffffff',
   numXOffset: 22,
   numYOffset: 22,
   numSize: 42,
@@ -36,7 +35,9 @@ function blankZoneData(n){
     img:null,
     text:'',
     pos: currentFormat()==='single' ? 'bottom-left' : (i===0 ? 'top-left' : 'bottom-left'),
-    size: currentFormat()==='single' ? 52 : (i===0 ? 34 : 42)
+    size: currentFormat()==='single' ? 52 : (i===0 ? 34 : 42),
+    weight:600,
+    color:'#ffffff'
   }));
 }
 
@@ -59,11 +60,13 @@ function rebuildZones(){
            </div>
          </div>`
       : '';
+
     card.innerHTML = `
       <div class="frame-title">${title}</div>
       ${uploadField}
       <label style="margin-top:${uploadField ? '10px':'0'}">Texto en imagen</label>
       <textarea data-text="${i}" placeholder="Texto exacto"></textarea>
+
       <div class="row">
         <div>
           <label>Posición</label>
@@ -82,6 +85,26 @@ function rebuildZones(){
         <div>
           <label>Tamaño</label>
           <input type="number" min="18" max="120" value="${zones[i].size}" data-size="${i}" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Peso</label>
+          <select data-weight="${i}">
+            <option value="300">Light</option>
+            <option value="400">Regular</option>
+            <option value="500">Medium</option>
+            <option value="600" selected>Semibold</option>
+            <option value="700">Bold</option>
+          </select>
+        </div>
+        <div>
+          <label>Color</label>
+          <select data-color="${i}">
+            <option value="#ffffff" selected>White</option>
+            <option value="#111111">Black</option>
+          </select>
         </div>
       </div>
     `;
@@ -110,6 +133,12 @@ function rebuildZones(){
   zonesRoot.querySelectorAll('[data-size]').forEach(el=>{
     el.addEventListener('input', e=>{ zones[+e.target.dataset.size].size = +e.target.value; render(); });
   });
+  zonesRoot.querySelectorAll('[data-weight]').forEach(el=>{
+    el.addEventListener('change', e=>{ zones[+e.target.dataset.weight].weight = +e.target.value; render(); });
+  });
+  zonesRoot.querySelectorAll('[data-color]').forEach(el=>{
+    el.addEventListener('change', e=>{ zones[+e.target.dataset.color].color = e.target.value; render(); });
+  });
 
   render();
 }
@@ -123,8 +152,8 @@ function coverImage(img, x, y, w, h){
   ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
 }
 
-function wrapText(text, maxWidth, fontSize){
-  ctx.font = `600 ${fontSize}px 'Clash Grotesk', Inter, Arial, Helvetica, sans-serif`;
+function wrapText(text, maxWidth, fontSize, fontWeight){
+  ctx.font = `${fontWeight} ${fontSize}px 'Clash Grotesk', Inter, Arial, Helvetica, sans-serif`;
   const words = (text || '').trim().split(/\s+/);
   if(!words[0]) return [];
   const lines = [];
@@ -153,9 +182,9 @@ function anchor(pos, x, y, w, h, pad, blockH){
   return {x:ax, y:ay, align};
 }
 
-function drawTextBlock(text, pos, fontSize, x, y, w, h){
+function drawTextBlock(text, pos, fontSize, fontWeight, color, x, y, w, h){
   const maxW = w - FIXED.pad * 2;
-  const lines = wrapText(text, maxW, fontSize);
+  const lines = wrapText(text, maxW, fontSize, fontWeight);
   if(!lines.length) return;
 
   const lh = Math.round(fontSize * 1.13);
@@ -166,11 +195,11 @@ function drawTextBlock(text, pos, fontSize, x, y, w, h){
   ctx.beginPath();
   ctx.rect(x, y, w, h);
   ctx.clip();
-  ctx.shadowColor = 'rgba(0,0,0,.48)';
+  ctx.shadowColor = color === '#ffffff' ? 'rgba(0,0,0,.48)' : 'rgba(255,255,255,.42)';
   ctx.shadowBlur = 12;
   ctx.shadowOffsetY = 2;
-  ctx.font = `600 ${fontSize}px 'Clash Grotesk', Inter, Arial, Helvetica, sans-serif`;
-  ctx.fillStyle = FIXED.defaultTextColor;
+  ctx.font = `${fontWeight} ${fontSize}px 'Clash Grotesk', Inter, Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = color;
   ctx.textAlign = a.align;
   ctx.textBaseline = 'top';
   lines.forEach((line, idx)=> ctx.fillText(line, a.x, a.y + idx * lh));
@@ -226,7 +255,14 @@ function render(){
   if(currentFormat()==='single'){
     const z = zones[0];
     if(z && z.img) coverImage(z.img, 0, 0, canvas.width, canvas.height);
-    drawTextBlock(z?.text || '', z?.pos || 'bottom-left', z?.size || 52, 0, 0, canvas.width, canvas.height);
+    drawTextBlock(
+      z?.text || '',
+      z?.pos || 'bottom-left',
+      z?.size || 52,
+      z?.weight || 600,
+      z?.color || '#ffffff',
+      0, 0, canvas.width, canvas.height
+    );
     if(shouldNumber()) drawNumber(1, 0, 0);
     return;
   }
@@ -248,7 +284,16 @@ function render(){
     } else if(!fullStoryboardImage){
       drawEmptyFrameLabel(i+1, x, frameW);
     }
-    drawTextBlock(zones[i].text, zones[i].pos, zones[i].size, x, 0, frameW, canvas.height);
+
+    drawTextBlock(
+      zones[i].text,
+      zones[i].pos,
+      zones[i].size,
+      zones[i].weight,
+      zones[i].color,
+      x, 0, frameW, canvas.height
+    );
+
     if(shouldNumber()) drawNumber(i+1, x, 0);
   }
 }
