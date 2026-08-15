@@ -84,12 +84,57 @@
 
   <main>
     <div class="preview-wrap">
-      <div class="preview-label" id="previewLabel">Preview · 1920 × 1080</div>
-      <canvas id="canvas" width="1920" height="1080"></canvas>
+      <div class="preview-head">
+        <div class="preview-label" id="previewLabel">Preview · 1920 × 1080</div>
+        <div class="preview-zoom">
+          <label for="previewZoom">Vista</label>
+          <select id="previewZoom" aria-label="Zoom de preview">
+            <option value="fit" selected>Ajustar</option>
+            <option value="0.25">25%</option>
+            <option value="0.5">50%</option>
+            <option value="0.75">75%</option>
+            <option value="1">100%</option>
+          </select>
+        </div>
+      </div>
+      <div class="preview-stage" id="previewStage">
+        <canvas id="canvas" width="1920" height="1080"></canvas>
+      </div>
     </div>
   </main>
 </div>
   <script src="js/app.js"></script>
   <script src="js/spec-loader.js"></script>
+  <script>
+    (()=>{
+      const canvas = document.getElementById('canvas');
+      const zoom = document.getElementById('previewZoom');
+      const format = document.getElementById('format');
+
+      function applyPreviewZoom(){
+        if(!canvas || !zoom) return;
+        if(zoom.value === 'fit'){
+          canvas.style.width = 'auto';
+          canvas.style.height = 'auto';
+          canvas.style.maxWidth = '100%';
+          canvas.style.maxHeight = 'calc(100vh - 118px)';
+        }else{
+          const scale = Number(zoom.value) || 1;
+          canvas.style.width = `${Math.round(canvas.width * scale)}px`;
+          canvas.style.height = 'auto';
+          canvas.style.maxWidth = 'none';
+          canvas.style.maxHeight = 'none';
+        }
+      }
+
+      zoom?.addEventListener('change', applyPreviewZoom);
+      format?.addEventListener('change', ()=>requestAnimationFrame(applyPreviewZoom));
+      window.addEventListener('resize', ()=>{ if(zoom?.value === 'fit') applyPreviewZoom(); });
+
+      const observer = new MutationObserver(()=>{ if(zoom?.value === 'fit') applyPreviewZoom(); });
+      observer.observe(document.getElementById('previewLabel'), {childList:true, subtree:true});
+      requestAnimationFrame(applyPreviewZoom);
+    })();
+  </script>
 </body>
 </html>
