@@ -17,9 +17,10 @@ Minimal browser-based compositor for social content production.
 ## Typography
 
 - UI: Inter
-- On-image text: Clash Grotesk
+- On-image text: Clash Grotesk, loaded locally from `fonts/clash-grotesk/`
+- Local weights: 200 ExtraLight, 300 Light, 400 Regular, 500 Medium, 600 Semibold, 700 Bold
 
-The `fonts/clash-grotesk/` folder is reserved for the local Clash Grotesk font files so the production build can stop depending on the Fontshare CDN.
+The Composer no longer depends on the Fontshare CDN for Clash Grotesk.
 
 ## Structure
 
