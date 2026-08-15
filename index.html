@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Content Composer</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brandmark">Miguel Castro</div>
+    <h1>Content Composer</h1>
+    <div class="sub">Minimal UI</div>
+
+    <label>Formato</label>
+    <select id="format">
+      <option value="storyboard" selected>Storyboard 16:9</option>
+      <option value="single">Imagen única 4:5</option>
+    </select>
+
+    <div class="section" id="storyboardControls">
+      <label>Input</label>
+      <select id="inputMode">
+        <option value="separate" selected>Frames separados</option>
+        <option value="full">Storyboard completo</option>
+      </select>
+
+      <label style="margin-top:12px">Estructura</label>
+      <select id="frameCount">
+        <option value="3" selected>3 frames</option>
+        <option value="4">4 frames</option>
+      </select>
+
+      <div class="row" style="margin-top:12px">
+        <div>
+          <label>Numeración</label>
+          <select id="numbering">
+            <option value="on" selected>On</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <div>
+          <label>Separador</label>
+          <input id="gutter" type="number" value="8" min="0" max="40" />
+        </div>
+      </div>
+    </div>
+
+    <div class="section hidden" id="singleControls">
+      <div class="row">
+        <div>
+          <label>Numeración</label>
+          <select id="singleNumbering">
+            <option value="off" selected>Off</option>
+            <option value="on">On</option>
+          </select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <div style="height:40px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section hidden" id="fullStoryboardUpload">
+      <label>Storyboard completo</label>
+      <div class="file-input">
+        <input type="file" id="fullUpload" accept="image/*" />
+        <div class="file-input-ui">
+          <span class="file-name" id="fullUploadName">Sin archivo</span>
+          <span class="file-action">Elegir</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="zonesRoot"></div>
+
+    <div class="section">
+      <button class="primary" id="renderBtn">Actualizar</button>
+      <button class="secondary" id="exportBtn">Exportar PNG</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="preview-wrap">
+      <div class="preview-label" id="previewLabel">Preview · 1920 × 1080</div>
+      <canvas id="canvas" width="1920" height="1080"></canvas>
+    </div>
+  </main>
+</div>
+  <script src="js/app.js"></script>
+</body>
+</html>
