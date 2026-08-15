@@ -1,5 +1,47 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-@import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@200,300,400,500,600,700&display=swap');
+
+@font-face{
+  font-family:'Clash Grotesk';
+  src:url('../fonts/clash-grotesk/ClashGrotesk-Extralight.otf') format('opentype');
+  font-style:normal;
+  font-weight:200;
+  font-display:swap;
+}
+@font-face{
+  font-family:'Clash Grotesk';
+  src:url('../fonts/clash-grotesk/ClashGrotesk-Light.otf') format('opentype');
+  font-style:normal;
+  font-weight:300;
+  font-display:swap;
+}
+@font-face{
+  font-family:'Clash Grotesk';
+  src:url('../fonts/clash-grotesk/ClashGrotesk-Regular.otf') format('opentype');
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+}
+@font-face{
+  font-family:'Clash Grotesk';
+  src:url('../fonts/clash-grotesk/ClashGrotesk-Medium.otf') format('opentype');
+  font-style:normal;
+  font-weight:500;
+  font-display:swap;
+}
+@font-face{
+  font-family:'Clash Grotesk';
+  src:url('../fonts/clash-grotesk/ClashGrotesk-Semibold.otf') format('opentype');
+  font-style:normal;
+  font-weight:600;
+  font-display:swap;
+}
+@font-face{
+  font-family:'Clash Grotesk';
+  src:url('../fonts/clash-grotesk/ClashGrotesk-Bold.otf') format('opentype');
+  font-style:normal;
+  font-weight:700;
+  font-display:swap;
+}
 
 :root{
   --bg:#ffffff;
